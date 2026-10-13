@@ -4,6 +4,7 @@ CONFIG     := release
 BIN        := .build/$(CONFIG)/$(APP_NAME)
 APP        := build/$(APP_NAME).app
 SIGN_ID    ?= VolumeMixer Dev
+INSTALL_DIR ?= /Applications
 
 # Distribution to other Macs. Requires an Apple Developer Program membership:
 # DEVELOPER_ID is the "Developer ID Application: ..." identity, NOTARY_PROFILE the name
@@ -12,7 +13,7 @@ DEVELOPER_ID   ?=
 NOTARY_PROFILE ?= volumemixer
 ZIP            := build/$(APP_NAME).zip
 
-.PHONY: all build bundle sign run debug stop test clean cert-help dist dist-setup
+.PHONY: all build bundle sign run debug stop install uninstall test clean cert-help dist dist-setup
 
 all: sign
 
@@ -50,6 +51,22 @@ debug: stop sign
 
 stop:
 	@pkill -x $(APP_NAME) 2>/dev/null || true
+
+# Keeping the app inside the build directory works, but macOS ties the audio permission to
+# where the bundle lives - `make clean` would then cost you the grant.
+install: stop sign
+	@if [ -d "$(INSTALL_DIR)/$(APP_NAME).app" ]; then \
+		test "$$(defaults read "$(INSTALL_DIR)/$(APP_NAME).app/Contents/Info" CFBundleIdentifier 2>/dev/null)" = "$(BUNDLE_ID)" \
+			|| { echo "error: $(INSTALL_DIR)/$(APP_NAME).app is not ours - refusing to replace it"; exit 1; }; \
+		rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"; \
+	fi
+	@cp -R $(APP) "$(INSTALL_DIR)/"
+	@echo "installed to $(INSTALL_DIR)/$(APP_NAME).app"
+	@open "$(INSTALL_DIR)/$(APP_NAME).app"
+
+uninstall: stop
+	@rm -rf "$(INSTALL_DIR)/$(APP_NAME).app"
+	@echo "removed $(INSTALL_DIR)/$(APP_NAME).app"
 
 test:
 	@swift run -c $(CONFIG) SelfTest

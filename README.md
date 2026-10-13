@@ -40,12 +40,38 @@ mixer work at all; see [Permissions](#permissions).
 | `make sign` | Bundle and code sign (falls back to ad-hoc with a warning) |
 | `make run` | Sign and launch |
 | `make debug` | Launch with `VOLUMEMIXER_DEBUG=1` for per-IO-proc diagnostics |
+| `make install` | Copy the app to `/Applications` and launch it from there |
+| `make uninstall` | Remove it from `/Applications` |
 | `make stop` | Quit a running instance |
 | `make test` | Run the self-tests |
 | `make clean` | Remove `.build` and `build` |
 | `make cert-help` | How to create a local signing identity |
 | `make dist-setup` | How to set up notarised distribution |
 | `make dist` | Sign, notarise and staple a shareable zip |
+
+## Using it on another Mac
+
+Cloning and building works, but it is a developer's install, not a user's:
+
+```sh
+git clone https://github.com/AxelBackman/VolumeMixer.git
+cd VolumeMixer
+make install
+```
+
+Three things to know before handing this to someone:
+
+1. **That Mac needs the Command Line Tools for Xcode 26+** — roughly 1.5 GB and a `sudo`
+   command. There is no way around it; the tap API does not exist in older SDKs.
+2. **Without a signing identity on that machine the build is ad-hoc signed**, so macOS asks
+   for the audio permission again after every rebuild, and "Launch at login" will fail —
+   `SMAppService` requires a real signature.
+3. **Install it somewhere permanent.** macOS ties the permission to where the bundle lives, so
+   running it straight out of `build/` means `make clean` costs you the grant. `make install`
+   puts it in `/Applications` and launches it from there.
+
+For anyone who is not going to enjoy the above, build a notarised zip instead and let them
+double-click it — see [Distribution](#distribution).
 
 ## Signing
 
