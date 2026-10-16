@@ -423,6 +423,7 @@ final class MixerEngine {
             guard controllers[group.id] == nil else { continue }
             do {
                 controllers[group.id] = try AppTapController(group: group,
+                                                             outputDeviceID: outputDeviceID,
                                                              outputDeviceUID: outputDeviceUID,
                                                              sampleRate: outputSampleRate,
                                                              initialGain: gain(for: group.id))

@@ -222,6 +222,7 @@ output=Arctis Nova Pro Wireless uid=... rate=48000 apps=2 tapped=2 master=mixer/
 | `cycles` | IO proc invocations — frozen means a stalled proc |
 | `in` / `out` | Buffer and channel layout per cycle |
 | `bail` | 0 fine, 1 no frames, 2 no channels, 3 no channel pointer, 4 empty after clamping |
+| `latency` | Logged once per tap: device vs aggregate, to show what the mixer costs |
 | `inPeak` | Loudest sample the tap has delivered |
 
 Reads of the process list and its properties need no permission at all, so `apps=` is
@@ -237,8 +238,11 @@ trustworthy even before the capture permission is granted.
 - **Changing output device briefly interrupts tapped apps** while the aggregates are rebuilt.
 - **Apps that spawn audio helpers rebuild their tap** when a new one appears, which costs a
   short gap for that app. League of Legends does this during startup.
-- **Latency** is roughly one IO buffer plus the device's safety offset, about 10 ms at 48 kHz
-  and 512 frames. Fine for playback, not for monitoring live input.
+- **Latency**: the mixer adds nothing measurable. Routing through the aggregate device reports
+  the same latency as the device reports on its own — verified at 8192 frames both ways on
+  AirPods Pro, where 7680 of those frames are Bluetooth and 512 are the IO buffer that exists
+  regardless. Whatever delay you hear belongs to the output device. Still not a path for
+  monitoring live input.
 - **Unbundled binaries and system agents get rows too.** They never quit, so those rows stay
   for the session.
 

@@ -84,6 +84,34 @@ enum SystemOutput {
         }
     }
 
+    struct LatencyReport {
+        var bufferFrames: UInt32
+        var deviceLatency: UInt32
+        var safetyOffset: UInt32
+        var streamLatency: UInt32
+
+        var totalFrames: UInt32 { bufferFrames + deviceLatency + safetyOffset + streamLatency }
+        func milliseconds(at sampleRate: Double) -> Double {
+            sampleRate > 0 ? Double(totalFrames) / sampleRate * 1000 : 0
+        }
+    }
+
+    /// Everything the HAL charges for output on a device, in frames.
+    static func latencyReport(of device: AudioObjectID) -> LatencyReport {
+        let scope = kAudioDevicePropertyScopeOutput
+        var report = LatencyReport(
+            bufferFrames: (try? device.read(kAudioDevicePropertyBufferFrameSize, scope: scope, as: UInt32.self)) ?? 0,
+            deviceLatency: (try? device.read(kAudioDevicePropertyLatency, scope: scope, as: UInt32.self)) ?? 0,
+            safetyOffset: (try? device.read(kAudioDevicePropertySafetyOffset, scope: scope, as: UInt32.self)) ?? 0,
+            streamLatency: 0
+        )
+        if let streams: [AudioObjectID] = try? device.readArray(kAudioDevicePropertyStreams, scope: scope),
+           let first = streams.first {
+            report.streamLatency = (try? first.read(kAudioStreamPropertyLatency, as: UInt32.self)) ?? 0
+        }
+        return report
+    }
+
     static func transportType(of device: AudioObjectID) -> UInt32 {
         (try? device.read(kAudioDevicePropertyTransportType, as: UInt32.self)) ?? 0
     }

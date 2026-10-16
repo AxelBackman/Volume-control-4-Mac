@@ -74,6 +74,7 @@ final class AppTapController {
     private var invalidated = false
 
     init(group: AudioAppGroup,
+         outputDeviceID: AudioObjectID,
          outputDeviceUID: String,
          sampleRate: Double,
          initialGain: Float) throws {
@@ -109,6 +110,12 @@ final class AppTapController {
             ioCycles.destroy(); lastFrames.destroy(); lastInputLayout.destroy()
             lastOutputLayout.destroy(); lastBail.destroy(); lastInputPeak.destroy()
             throw error
+        }
+
+        if ProcessInfo.processInfo.environment["VOLUMEMIXER_DEBUG"] == "1" {
+            let direct = SystemOutput.latencyReport(of: outputDeviceID)
+            let viaMixer = SystemOutput.latencyReport(of: aggregate.deviceID)
+            log.notice("latency \(group.name, privacy: .public): device \(direct.totalFrames, privacy: .public)fr (\(direct.milliseconds(at: sampleRate), privacy: .public)ms) vs aggregate \(viaMixer.totalFrames, privacy: .public)fr (\(viaMixer.milliseconds(at: sampleRate), privacy: .public)ms) [buf=\(viaMixer.bufferFrames, privacy: .public) dev=\(viaMixer.deviceLatency, privacy: .public) safety=\(viaMixer.safetyOffset, privacy: .public) stream=\(viaMixer.streamLatency, privacy: .public)]")
         }
 
         do {
